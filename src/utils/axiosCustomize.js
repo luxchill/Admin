@@ -1,6 +1,6 @@
 import axios from 'axios';
 import NProgress from 'nprogress'; // import loading
-import { store } from '../redux/store';
+import { store } from '../store/index';
 
 // config NProgress
 

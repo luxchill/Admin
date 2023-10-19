@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -34,32 +34,45 @@ import PerfectScrollbar from 'react-perfect-scrollbar';
 import MainCard from 'ui-component/cards/MainCard';
 import Transitions from 'ui-component/extended/Transitions';
 import UpgradePlanCard from './UpgradePlanCard';
-import User1 from 'assets/images/users/user-round.svg';
 
 // assets
 import { IconLogout, IconSearch, IconSettings, IconUser } from '@tabler/icons';
+import { IconLogin2, IconUserPlus } from '@tabler/icons-react';
+import { logout } from 'services/apiService';
+import { doLogout } from 'store/action/userAction';
+
+// toast
+import { toast } from 'react-toastify';
 
 // ==============================|| PROFILE MENU ||============================== //
 
 const ProfileSection = () => {
   const theme = useTheme();
   const customization = useSelector((state) => state.customization);
-  // const account = useSelector((state) => state.user.account);
+  const account = useSelector((state) => state.user.account);
   const isAuthenticated = useSelector((state) => state.user.isAuthenticated);
-  const navigate = useNavigate();
 
   const [sdm, setSdm] = useState(true);
   const [value, setValue] = useState('');
   const [notification, setNotification] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [open, setOpen] = useState(false);
-  /**
-   * anchorRef is used on different componets and specifying one type leads to other components throwing an error
-   * */
+  const [timeOfDay, setTimeOfDay] = useState('');
+
   const anchorRef = useRef(null);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleLogout = async () => {
-    console.log('Logout');
+    let res = await logout(`${account.email}`, account.refresh_token);
+    if (res && res.EC === 0) {
+      // clear data redux
+      dispatch(doLogout());
+      toast.success('Logout success');
+      navigate('/pages/login/login3');
+    } else {
+      toast.error(res.EM);
+    }
   };
 
   const handleClose = (event) => {
@@ -90,6 +103,31 @@ const ProfileSection = () => {
     prevOpen.current = open;
   }, [open]);
 
+  // render time ? welcome
+  useEffect(() => {
+    function getTimeOfDay() {
+      const currentHour = new Date().getHours();
+
+      if (currentHour >= 5 && currentHour < 12) {
+        return 'Good Morning';
+      } else if (currentHour >= 12 && currentHour < 17) {
+        return 'Good Afternoon';
+      } else {
+        return 'Good Night';
+      }
+    }
+
+    setTimeOfDay(getTimeOfDay());
+  }, []);
+
+  const navigateLogin = () => {
+    navigate('/pages/login/login3');
+  };
+
+  const navigateRegister = () => {
+    navigate('/pages/register/register3');
+  };
+
   return (
     <>
       <Chip
@@ -114,7 +152,7 @@ const ProfileSection = () => {
         }}
         icon={
           <Avatar
-            src={User1}
+            src={`data:image/jpeg;base64,${account.image}`}
             sx={{
               ...theme.typography.mediumAvatar,
               margin: '8px 0 8px 8px !important',
@@ -160,9 +198,11 @@ const ProfileSection = () => {
                   <Box sx={{ p: 2 }}>
                     <Stack>
                       <Stack direction="row" spacing={0.5} alignItems="center">
-                        <Typography variant="h4">Good Morning,</Typography>
+                        <Typography variant="h4">
+                          {timeOfDay} {/** welcome */} ,
+                        </Typography>
                         <Typography component="span" variant="h4" sx={{ fontWeight: 400 }}>
-                          Johne Doe
+                          {account.username} {/** username */}
                         </Typography>
                       </Stack>
                       <Typography variant="subtitle2">Project Admin</Typography>
@@ -304,20 +344,20 @@ const ProfileSection = () => {
                             <ListItemButton
                               sx={{ borderRadius: `${customization.borderRadius}px` }}
                               selected={selectedIndex === 0}
-                              onClick={(event) => handleListItemClick(event, 0, '#')}
+                              onClick={navigateLogin}
                             >
                               <ListItemIcon>
-                                <IconSettings stroke={1.5} size="1.3rem" />
+                                <IconLogin2 stroke={1.5} size="1.3rem" />
                               </ListItemIcon>
                               <ListItemText primary={<Typography variant="body2">Login</Typography>} />
                             </ListItemButton>
                             <ListItemButton
                               sx={{ borderRadius: `${customization.borderRadius}px` }}
                               selected={selectedIndex === 0}
-                              onClick={(event) => handleListItemClick(event, 0, '#')}
+                              onClick={navigateRegister}
                             >
                               <ListItemIcon>
-                                <IconSettings stroke={1.5} size="1.3rem" />
+                                <IconUserPlus stroke={1.5} size="1.3rem" />
                               </ListItemIcon>
                               <ListItemText primary={<Typography variant="body2">Register</Typography>} />
                             </ListItemButton>

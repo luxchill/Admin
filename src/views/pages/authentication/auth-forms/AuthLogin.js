@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -34,6 +34,10 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 import Google from 'assets/images/icons/social-google.svg';
+import { postLogin } from 'services/apiService';
+import { doLogin } from 'store/action/userAction';
+import { useNavigate } from 'react-router';
+import { toast } from 'react-toastify';
 
 // ============================|| FIREBASE - LOGIN ||============================ //
 
@@ -42,19 +46,48 @@ const FirebaseLogin = ({ ...others }) => {
   const scriptedRef = useScriptRef();
   const matchDownSM = useMediaQuery(theme.breakpoints.down('md'));
   const customization = useSelector((state) => state.customization);
-  const [checked, setChecked] = useState(true);
+  const [checked, setChecked] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  // const [remember, setRemember] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const googleHandler = async () => {
     console.error('Login');
   };
 
-  const [showPassword, setShowPassword] = useState(false);
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
   };
 
   const handleMouseDownPassword = (event) => {
     event.preventDefault();
+  };
+
+  const handleOnchangeName = (e) => {
+    setUsername(e.target.value);
+  };
+
+  const handleOnchangePass = (e) => {
+    setPassword(e.target.value);
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    let res = await postLogin(username, password);
+    if (res && res.EC === 0) {
+      dispatch(doLogin(res));
+      toast.success(res.EM);
+      navigate('/');
+    }
+
+    if (res && +res.EC !== 0) {
+      toast.error(res.EM);
+    }
   };
 
   return (
@@ -144,17 +177,20 @@ const FirebaseLogin = ({ ...others }) => {
           }
         }}
       >
-        {({ errors, handleBlur, handleChange, handleSubmit, isSubmitting, touched, values }) => (
-          <form noValidate onSubmit={handleSubmit} {...others}>
+        {({ errors, handleBlur, handleChange, isSubmitting, touched }) => (
+          <form noValidate onSubmit={(e) => handleLogin(e)} {...others}>
             <FormControl fullWidth error={Boolean(touched.email && errors.email)} sx={{ ...theme.typography.customInput }}>
               <InputLabel htmlFor="outlined-adornment-email-login">Email Address / Username</InputLabel>
               <OutlinedInput
                 id="outlined-adornment-email-login"
                 type="email"
-                value={values.email}
+                value={username}
                 name="email"
                 onBlur={handleBlur}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  handleOnchangeName(e);
+                }}
                 label="Email Address / Username"
                 inputProps={{}}
               />
@@ -170,10 +206,13 @@ const FirebaseLogin = ({ ...others }) => {
               <OutlinedInput
                 id="outlined-adornment-password-login"
                 type={showPassword ? 'text' : 'password'}
-                value={values.password}
+                value={password}
                 name="password"
                 onBlur={handleBlur}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  handleOnchangePass(e);
+                }}
                 endAdornment={
                   <InputAdornment position="end">
                     <IconButton
